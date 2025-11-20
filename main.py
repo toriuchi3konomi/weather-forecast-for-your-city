@@ -1,0 +1,55 @@
+from flask import Flask, request, abort
+
+from linebot import WebhookHandler
+from linebot.exceptions import InvalidSignatureError
+from linebot.models import MessageEvent, FollowEvent, TextMessage
+from linebot import LineBotApi
+import requests   # ← これを上の方に追加！
+
+app = Flask(__name__)
+
+import os # 👈 これがコードの先頭付近（例：8行目）にあるか確認
+# ...
+# Line Botの機密情報を安全にシークレットから読み込む
+CHANNEL_SECRET = os.environ['CHANNEL_SECRET']
+CHANNEL_ACCESS_TOKEN = os.environ['CHANNEL_ACCESS_TOKEN']
+# 👈 CHANNEL_ACCESS_TOKENの読み込み行をここに追加（もしos.environで挿入済みならそのまま）
+# ...
+handler = WebhookHandler(CHANNEL_SECRET) # 👈 os.environから読み込んだ変数を使用
+line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN) # 👈 os.environから読み込んだ変数を使用
+
+@app.route("/webhook", methods=['POST'])
+def webhook():
+    signature = request.headers['X-Line-Signature']
+    body = request.get_data(as_text=True)
+    try:
+        handler.handle(body, signature)
+    except InvalidSignatureError:
+        abort(400)
+    return 'OK'
+
+# 友だち追加されたら挨拶！
+@handler.add(FollowEvent)
+def handle_follow(event):
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextMessage(text="あなたの街のお天気ボットだよ♡\nあなたの街のお名前を教えてね！(例：藤沢)")
+    )
+
+# ★ここだけ残す！（天気教えてくれる本体）
+@handler.add(MessageEvent, message=TextMessage)
+def handle_message(event):
+    city = event.message.text.strip()
+    
+    weather = requests.get(f"http://wttr.in/{city}?format=3").text
+    
+    reply_text = f"{city}の天気だよ♡\n{weather}\n今日も素敵な1日になりますように✨"
+    
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextMessage(text=reply_text)
+    )
+
+if __name__ == "__main__":
+    print("サーバー起動中… http://127.0.0.1:5000")
+    app.run(port=5000)
