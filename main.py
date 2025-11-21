@@ -41,23 +41,23 @@ def handle_follow(event):
 def handle_message(event):
     city = event.message.text.strip()
     
-       # 未来の空を優しく覗く魔法
+          # 未来の空を優しく覗く魔法（完璧綺麗バージョン！）
     import requests
     
     # 今日の天気
     today_url = f"http://wttr.in/{city}?format=%l+%c+%t&lang=ja&m"
     today = requests.get(today_url).text.strip()
     
-    # 明日の天気
+    # 明日の天気（確実に1行だけ取り出す）
     tomorrow_full = requests.get(f"http://wttr.in/{city}?0&lang=ja&m").text
-    tomorrow_lines = tomorrow_full.split('\n')
-    tomorrow = tomorrow_lines[-1].strip() if len(tomorrow_lines) > 1 else "情報取得中…"
+    tomorrow_lines = [line for line in tomorrow_full.split('\n') if line.strip() and not line.startswith('Weather')]
+    tomorrow = tomorrow_lines[0].strip() if len(tomorrow_lines) > 0 else "情報取得中…"
     
-    # 週末予報
-    weekend_url = f"http://wttr.in/{city}?format=土曜日: %c+%t 日曜日: %c+%t&lang=ja&m"
-    weekend = requests.get(weekend_url).text.strip()
+    # 週末予報（土日を綺麗に）
+    weekend_full = requests.get(f"http://wttr.in/{city}?format=土曜日: %c+%t 日曜日: %c+%t&lang=ja&m").text
+    weekend = weekend_full.strip().replace("土曜日:", "\n土曜日:").replace("日曜日:", "\n日曜日:").strip()
 
-    reply_text = f"{city}の空だよ✨\n\n" \
+    reply_text = f"{city}の空だよ♡\n\n" \
                  f"今日： {today}\n" \
                  f"明日： {tomorrow}\n" \
                  f"週末予想： {weekend}\n\n" \
@@ -67,7 +67,6 @@ def handle_message(event):
         event.reply_token,
         TextMessage(text=reply_text)
     )
-
 if __name__ == "__main__":
     print("サーバー起動中…")
     app.run(host="0.0.0.0", port=10000)   # ← これに変更！！
