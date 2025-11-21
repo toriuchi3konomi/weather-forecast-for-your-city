@@ -41,7 +41,7 @@ def handle_follow(event):
 def handle_message(event):
     city = event.message.text.strip()
     
-    weather = requests.get(f"http://wttr.in/{city}?format=3").text
+   weather = requests.get(f"http://wttr.in/{city}?format=3&lang=ja").text
     
     reply_text = f"{city}の天気だよ♡\n{weather}\n今日も素敵な1日になりますように✨"
     
