@@ -67,9 +67,12 @@ def handle_message(event):
     tomorrow_url = f"http://wttr.in/{city}?format=%c@1+%t@1&lang=ja&m"
     tomorrow_raw = requests.get(tomorrow_url).text.strip()
     
+    # 不要な"@1"を削除し、さらに前後の余分な空白も除去
+    tomorrow_clean = tomorrow_raw.replace('@1', '').strip()
+    
     # wttr.inが失敗すると'Unknown location'などを返すため、結果をチェック
-    if tomorrow_raw and 'Unknown location' not in tomorrow_raw:
-        tomorrow = f"{city} {tomorrow_raw}"
+    if tomorrow_clean and 'Unknown location' not in tomorrow_clean:
+        tomorrow = f"{city} {tomorrow_clean}"
     else:
         tomorrow = "明日の情報が見つかりませんでした"
     
@@ -93,5 +96,4 @@ def handle_message(event):
 if __name__ == "__main__":
     print("サーバー起動中…")
     # Flaskサーバーをホスト0.0.0.0とポート10000で起動
-    # これはCanvas環境で動作させるための設定です。
     app.run(host="0.0.0.0", port=10000)
