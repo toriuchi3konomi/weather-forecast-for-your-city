@@ -1,12 +1,10 @@
 from flask import Flask, request, abort
 from linebot import WebhookHandler
-from flask import Flask, request, abort
-from linebot import WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, FollowEvent, TextMessage
 from linebot import LineBotApi
-import requests # APIリクエスト用
-import os # 環境変数読み込み用
+import requests   # APIリクエスト用
+import os         # 環境変数読み込み用
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
@@ -74,7 +72,7 @@ def get_weather_data(latitude, longitude):
         return None
 
 # Weather Code (WMOコード)を日本語と絵文字に変換する辞書
-# 簡略化のため、主要なコードのみを定義しています
+# スペースをすべて半角で打ち直しました
 WEATHER_CODES = {
     0: ("快晴", "☀️"),      # Clear sky
     1: ("快晴", "☀️"),      # Mainly clear
@@ -149,8 +147,6 @@ def handle_message(event):
     # 3. 曜日を計算し、必要な日のインデックスを取得する
     # ----------------------------------------------------
     
-    # Open-MeteoのタイムゾーンはTokyoになっているため、日本の曜日を使用
-    
     # 曜日のリスト (月:0, 火:1, ..., 土:5, 日:6)
     TODAY_INDEX = 0
     TOMORROW_INDEX = 1
@@ -161,6 +157,7 @@ def handle_message(event):
 
     # 取得した7日間の日付をチェックし、土曜日と日曜日のインデックスを探す
     for i, date_str in enumerate(daily['time']):
+        # date_strは 'YYYY-MM-DD' 形式
         date_obj = datetime.strptime(date_str, '%Y-%m-%d')
         weekday = date_obj.weekday() # 0=月曜日, 6=日曜日
 
@@ -211,212 +208,12 @@ def handle_message(event):
         saturday_label = ""
     
     # 返信メッセージの構築
+    # 最後のコードでは city_name が今日と明日の表示に入っていなかったので追加します
     reply_text = f"{city_name} の空だよ✨\n\n" \
-                 f"今日：{city_name} {today_display}\n" \
-                 f"明日：{city_name} {tomorrow_display}\n" \
+                 f"今日： {city_name} {today_display}\n" \
+                 f"明日： {city_name} {tomorrow_display}\n" \
                  f"\n週末予想：\n" \
                  f"土曜日{saturday_label}: {saturday_display}\n" \
-                 f"日曜日: {sunday_display}\n\n" \
-                 f"素敵な1日になりますように✨"
-    
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextMessage(text=reply_text)
-    )
-
-if __name__ == "__main__":
-    print("サーバー起動中…")
-    # Flaskサーバーをホスト0.0.0.0とポート10000で起動
-    app.run(host="0.0.0.0", port=10000)from linebot.models import MessageEvent, FollowEvent, TextMessage
-from linebot import LineBotApi
-import requests # APIリクエスト用
-import os # 環境変数読み込み用
-from datetime import datetime, timedelta
-
-app = Flask(__name__)
-
-# --- 認証情報の読み込み (Canvas環境用) ---
-try:
-    CHANNEL_SECRET = os.environ['CHANNEL_SECRET']
-    CHANNEL_ACCESS_TOKEN = os.environ['CHANNEL_ACCESS_TOKEN']
-except KeyError:
-    print("Warning: LINE secret/token not found in environment variables.")
-    CHANNEL_SECRET = "YOUR_CHANNEL_SECRET"
-    CHANNEL_ACCESS_TOKEN = "YOUR_CHANNEL_ACCESS_TOKEN"
-
-handler = WebhookHandler(CHANNEL_SECRET)
-line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN)
-
-# ----------------------------------------------------
-# 外部APIとの連携関数
-# ----------------------------------------------------
-
-def get_coordinates(city_name):
-    """
-    地名から緯度と経度を取得する (Open-Meteo GeoCoding APIを使用)
-    """
-    GEOCoding_URL = "https://geocoding-api.open-meteo.com/v1/search"
-    params = {
-        "name": city_name,
-        "count": 1,
-        "language": "ja",
-        "format": "json"
-    }
-    try:
-        response = requests.get(GEOCoding_URL, params=params)
-        response.raise_for_status()
-        data = response.json()
-        
-        if data.get('results'):
-            result = data['results'][0]
-            return result['latitude'], result['longitude'], result['name']
-        return None, None, None
-    except requests.exceptions.RequestException as e:
-        print(f"GeoCoding API Error: {e}")
-        return None, None, None
-
-def get_weather_data(latitude, longitude):
-    """
-    緯度と経度から天気データを取得する (Open-Meteo Weather APIを使用)
-    """
-    WEATHER_URL = "https://api.open-meteo.com/v1/forecast"
-    params = {
-        "latitude": latitude,
-        "longitude": longitude,
-        # 必要なデータを日別で取得
-        "daily": ["weather_code", "temperature_2m_max", "temperature_2m_min"],
-        "timezone": "Asia/Tokyo",
-        "forecast_days": 7 # 7日分の予報を取得（今回使用するのは4日分）
-    }
-    try:
-        response = requests.get(WEATHER_URL, params=params)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        print(f"Weather API Error: {e}")
-        return None
-
-# Weather Code (WMOコード)を日本語と絵文字に変換する辞書
-# 簡略化のため、主要なコードのみを定義しています
-WEATHER_CODES = {
-    0: ("快晴", "☀️"),
-    1: ("快晴", "☀️"),
-    2: ("一部曇り", "🌤️"),
-    3: ("曇り", "☁️"),
-    45: ("霧", "🌫️"),
-    48: ("霧氷", "🌫️"),
-    51: ("霧雨", "🌧️"),
-    53: ("霧雨", "🌧️"),
-    55: ("激しい霧雨", "🌧️"),
-    61: ("弱い雨", "☔️"),
-    63: ("雨", "☔️"),
-    65: ("激しい雨", "☔️"),
-    71: ("弱い雪", "❄️"),
-    73: ("雪", "❄️"),
-    75: ("激しい雪", "❄️"),
-    80: ("弱いにわか雨", "🌦️"),
-    81: ("にわか雨", "🌦️"),
-    82: ("激しいにわか雨", "🌧️"),
-    95: ("雷雨", "⛈️"),
-    96: ("ひょうを伴う雷雨", "⛈️"),
-    99: ("激しいひょうを伴う雷雨", "⛈️"),
-}
-
-def get_weather_display(code, max_temp, min_temp):
-    """WMOコードと気温から表示文字列を生成する"""
-    description, emoji = WEATHER_CODES.get(code, ("不明", "❓"))
-    # 小数点以下を切り捨てて表示
-    return f"{emoji} {description} {int(max_temp)}°C / {int(min_temp)}°C"
-
-# ----------------------------------------------------
-# LINE Botのイベントハンドラ
-# ----------------------------------------------------
-
-@app.route("/webhook", methods=['POST'])
-def webhook():
-    """LINEプラットフォームからのWebhookを受信するエンドポイント"""
-    signature = request.headers['X-Line-Signature']
-    body = request.get_data(as_text=True)
-    try:
-        handler.handle(body, signature)
-    except InvalidSignatureError:
-        print("Invalid signature. Check your channel secret.")
-        abort(400)
-    return 'OK'
-
-# 友だち追加されたら挨拶！
-@handler.add(FollowEvent)
-def handle_follow(event):
-    """友だち追加されたときの処理"""
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextMessage(text="あなたの街のお天気ボットだよ✨\n街のお名前を教えてね！(例：藤沢)")
-    )
-
-# ユーザーからのメッセージに対応する本体
-@handler.add(MessageEvent, message=TextMessage)
-def handle_message(event):
-    """ユーザーからのテキストメッセージを受け取って、天気予報を返す"""
-    city_input = event.message.text.strip()
-    
-    # 1. 地名から緯度・経度を取得
-    latitude, longitude, city_name = get_coordinates(city_input)
-    
-    if not latitude or not longitude:
-        reply_text = f"ごめんね、'{city_input}' の場所情報が見つからなかったよ😥\n別の地名で試してみてね！"
-        line_bot_api.reply_message(event.reply_token, TextMessage(text=reply_text))
-        return
-        
-    # 2. 緯度・経度から天気データを取得
-    weather_data = get_weather_data(latitude, longitude)
-    
-    if not weather_data or 'daily' not in weather_data:
-        reply_text = f"ごめんね、{city_name} の天気予報データが見つからなかったよ😥"
-        line_bot_api.reply_message(event.reply_token, TextMessage(text=reply_text))
-        return
-
-    daily = weather_data['daily']
-    
-    # ----------------------------------------------------
-    # 取得したデータを整形 (インデックス 0:今日, 1:明日, 2:明後日, 3:明々後日)
-    # ----------------------------------------------------
-    
-    forecasts = []
-    # 必要な4日分のデータがあるか確認
-    if len(daily['time']) >= 4:
-        # 今日 (インデックス 0)
-        today_code = daily['weather_code'][0]
-        today_max = daily['temperature_2m_max'][0]
-        today_min = daily['temperature_2m_min'][0]
-        today_display = get_weather_display(today_code, today_max, today_min)
-        
-        # 明日 (インデックス 1)
-        tomorrow_code = daily['weather_code'][1]
-        tomorrow_max = daily['temperature_2m_max'][1]
-        tomorrow_min = daily['temperature_2m_min'][1]
-        tomorrow_display = get_weather_display(tomorrow_code, tomorrow_max, tomorrow_min)
-        
-        # 週末 (土曜日:インデックス 2, 日曜日:インデックス 3 と仮定)
-        saturday_code = daily['weather_code'][2]
-        saturday_max = daily['temperature_2m_max'][2]
-        saturday_min = daily['temperature_2m_min'][2]
-        saturday_display = get_weather_display(saturday_code, saturday_max, saturday_min)
-
-        sunday_code = daily['weather_code'][3]
-        sunday_max = daily['temperature_2m_max'][3]
-        sunday_min = daily['temperature_2m_min'][3]
-        sunday_display = get_weather_display(sunday_code, sunday_max, sunday_min)
-
-    else:
-        # データが不十分な場合のフォールバック
-        today_display = tomorrow_display = saturday_display = sunday_display = "データ不足"
-
-    # 返信メッセージの構築
-    reply_text = f"{city_name} の空だよ✨\n\n" \
-                 f"今日： {today_display}\n" \
-                 f"明日： {tomorrow_display}\n" \
-                 f"\n週末予想：\n" \
-                 f"土曜日: {saturday_display}\n" \
                  f"日曜日: {sunday_display}\n\n" \
                  f"素敵な1日になりますように✨"
     
