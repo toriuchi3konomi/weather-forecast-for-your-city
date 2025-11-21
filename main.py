@@ -33,7 +33,7 @@ def webhook():
 def handle_follow(event):
     line_bot_api.reply_message(
         event.reply_token,
-        TextMessage(text="あなたの街のお天気ボットだよ♡\nあなたの街のお名前を教えてね！(例：藤沢)")
+        TextMessage(text="あなたの街のお天気ボットだよ✨\n街のお名前を教えてね！(例：藤沢)")
     )
 
 # ★ここだけ残す！（天気教えてくれる本体）
@@ -41,14 +41,27 @@ def handle_follow(event):
 def handle_message(event):
     city = event.message.text.strip()
     
-           # 天気取得（日本語＆°C表示にする最強の呪文！）
-    weather_url = f"http://wttr.in/{city}?format=%l+%c+%t&lang=ja&m"
-    weather = requests.get(weather_url).text.strip()
+    # 未来の空を覗く魔法！
+    import requests
+    
+    # 今日の天気
+    today_url = f"http://wttr.in/{city}?format=%l+%c+%t&lang=ja&m"
+    today = requests.get(today_url).text.strip()
+    
+    # 明日の天気
+    tomorrow_url = f"http://wttr.in/{city}?0&lang=ja&m"
+    tomorrow = requests.get(tomorrow_url).text.strip().split('\n')[-1]  # 明日の行だけ
+    
+    # 週末（土日の予報）簡易版
+    weekend_url = f"http://wttr.in/{city}?format=%F+%S+%c+%t&lang=ja&m"
+    weekend = requests.get(weekend_url).text.strip()
 
-    reply_text = f"{city}の天気だよ♡\n{weather}\n今日も素敵な1日になりますように✨"
-    
-    reply_text = f"{city}の天気だよ♡\n{weather}\n今日も素敵な1日になりますように✨"
-    
+    reply_text = f"{city}の空だよ✨\n\n" \
+                 f"今日： {today}\n" \
+                 f"明日： {tomorrow}\n" \
+                 f"週末予想： {weekend}\n\n" \
+                 f"素敵な1日になりますように✨"
+
     line_bot_api.reply_message(
         event.reply_token,
         TextMessage(text=reply_text)
