@@ -51,15 +51,16 @@ def handle_message(event):
     
     # ----------------------------------------------------
     # wttr.inから天気情報を取得 (Max/Min気温を使用: %h/%l)
+    # %l: 場所名, %c: 天気アイコン, %h: 最高気温, %l: 最低気温
+    # @1: 明日の情報
     # ----------------------------------------------------
     
-    # 1. 今日の天気（場所名、アイコン、最高/最低気温）
-    # %h: 最高気温, %l: 最低気温
+    # 1. 今日の天気: 場所名 + 天気アイコン + 最高/最低気温
     today_url = f"http://wttr.in/{city}?format=%l+%c+%h/%l&lang=ja&m"
     today = requests.get(today_url).text.strip()
     
-    # 2. 明日の天気（アイコン、最高/最低気温）
-    # @1: 明日の情報
+    # 2. 明日の天気: 天気アイコン + 最高/最低気温 (場所名は返信本文で付加)
+    # %c@1+%h@1/%l@1 のみのシンプルなフォーマットに変更
     tomorrow_url = f"http://wttr.in/{city}?format=%c@1+%h@1/%l@1&lang=ja&m"
     tomorrow_raw = requests.get(tomorrow_url).text.strip()
     
@@ -67,17 +68,18 @@ def handle_message(event):
     tomorrow_clean = tomorrow_raw.replace('@1', '').strip()
     
     if tomorrow_clean and 'Unknown location' not in tomorrow_clean:
+        # 場所名をここで付加
         tomorrow = f"{city} {tomorrow_clean}"
     else:
         tomorrow = "明日の情報が見つかりませんでした"
 
-    # 3. 週末予報（土日を綺麗に）
-    # @1: 明日 (土曜日と仮定) / @2: 明後日 (日曜日と仮定)
-    # 実行する曜日によっては予報がズレることがあります。
-    weekend_url = f"http://wttr.in/{city}?format=土曜日: %c@1+%h@1/%l@1 日曜日: %c@2+%h@2/%l@2&lang=ja&m"
+    # 3. 週末予報（土日を綺麗に）: 天気アイコン + 最高/最低気温
+    # format内では場所名(%l)を使わず、シンプルな予報情報のみを要求します。
+    weekend_format = "土曜日: %c@1+%h@1/%l@1 日曜日: %c@2+%h@2/%l@2"
+    weekend_url = f"http://wttr.in/{city}?format={weekend_format}&lang=ja&m"
     weekend_full = requests.get(weekend_url).text
     
-    # パース時に不要な"@1"や"@2"が混入する可能性があるため、念のためここで削除
+    # 不要な"@1"や"@2"を削除
     weekend_clean = weekend_full.replace('@1', '').replace('@2', '').strip()
 
     # 表示を整形
