@@ -41,7 +41,7 @@ def handle_follow(event):
 def handle_message(event):
     city = event.message.text.strip()
     
-    # 未来の空を覗く魔法！
+       # 未来の空を優しく覗く魔法
     import requests
     
     # 今日の天気
@@ -49,11 +49,12 @@ def handle_message(event):
     today = requests.get(today_url).text.strip()
     
     # 明日の天気
-    tomorrow_url = f"http://wttr.in/{city}?0&lang=ja&m"
-    tomorrow = requests.get(tomorrow_url).text.strip().split('\n')[-1]  # 明日の行だけ
+    tomorrow_full = requests.get(f"http://wttr.in/{city}?0&lang=ja&m").text
+    tomorrow_lines = tomorrow_full.split('\n')
+    tomorrow = tomorrow_lines[-1].strip() if len(tomorrow_lines) > 1 else "情報取得中…"
     
-    # 週末（土日の予報）簡易版
-    weekend_url = f"http://wttr.in/{city}?format=%F+%S+%c+%t&lang=ja&m"
+    # 週末予報
+    weekend_url = f"http://wttr.in/{city}?format=土曜日: %c+%t 日曜日: %c+%t&lang=ja&m"
     weekend = requests.get(weekend_url).text.strip()
 
     reply_text = f"{city}の空だよ✨\n\n" \
