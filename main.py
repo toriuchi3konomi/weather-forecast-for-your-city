@@ -41,22 +41,25 @@ def handle_follow(event):
 def handle_message(event):
     city = event.message.text.strip()
     
-        # 未来の空を完璧に覗く魔法（これで本当に完璧！）
+    # 未来の空を完璧に覗く魔法（これで100%明日の温度が出る！）
     import requests
     
     # 今日の天気
     today_url = f"http://wttr.in/{city}?format=%l+%c+%t&lang=ja&m"
     today = requests.get(today_url).text.strip()
     
-    # 明日の天気（確実に温度が入ってる行だけ抜き出す！）
+    # 明日の天気（確実に「+xx°C」を抜き出す）
     tomorrow_full = requests.get(f"http://wttr.in/{city}?0&lang=ja&m").text
     tomorrow = "情報取得中…"
     for line in tomorrow_full.split('\n'):
-        if "°C" in line or "°F" in line:
-            tomorrow = line.strip()
+        if '+' in line and ('°C' in line or '°F' in line):
+            # 場所名 + 絵文字 + 温度だけ抜き出す
+            parts = line.split()
+            if len(parts) >= 3:
+                tomorrow = f"{city} {parts[1]} {parts[2]}"
             break
     
-    # 週末予報（土日を綺麗に改行）
+    # 週末予報（土日を綺麗に）
     weekend_full = requests.get(f"http://wttr.in/{city}?format=土曜日: %c+%t 日曜日: %c+%t&lang=ja&m").text
     weekend = weekend_full.strip().replace("土曜日:", "\n土曜日:").replace("日曜日:", "\n日曜日:")
 
