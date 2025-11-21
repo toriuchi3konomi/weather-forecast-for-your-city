@@ -41,19 +41,18 @@ def handle_follow(event):
 def handle_message(event):
     city = event.message.text.strip()
     
-    # 未来の空を完璧に覗く魔法（これで100%綺麗！）
+        # 未来の空を完璧に覗く魔法（これで本当に完璧！）
     import requests
     
     # 今日の天気
     today_url = f"http://wttr.in/{city}?format=%l+%c+%t&lang=ja&m"
     today = requests.get(today_url).text.strip()
     
-    # 明日の天気（余計な行を全部除去して確実に1行だけ！）
+    # 明日の天気（確実に温度が入ってる行だけ抜き出す！）
     tomorrow_full = requests.get(f"http://wttr.in/{city}?0&lang=ja&m").text
-    tomorrow_lines = tomorrow_full.split('\n')
     tomorrow = "情報取得中…"
-    for line in tomorrow_lines:
-        if "°C" in line or "°F" in line:   # 温度が入ってる行だけ選ぶ
+    for line in tomorrow_full.split('\n'):
+        if "°C" in line or "°F" in line:
             tomorrow = line.strip()
             break
     
@@ -66,7 +65,7 @@ def handle_message(event):
                  f"明日： {tomorrow}\n" \
                  f"週末予想： {weekend}\n\n" \
                  f"素敵な1日になりますように✨"
-
+    
     line_bot_api.reply_message(
         event.reply_token,
         TextMessage(text=reply_text)
