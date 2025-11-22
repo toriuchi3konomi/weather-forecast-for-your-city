@@ -40,10 +40,8 @@ def get_coordinates(city_name):
         
         if data.get('results'):
             result = data['results'][0]
-            # 取得した地名情報 (例: 横浜市) を使用
             return result['latitude'], result['longitude'], result['name'] 
         
-        # 検索結果が空の場合
         return None, None, None
     except requests.exceptions.RequestException as e:
         print(f"GeoCoding API Error: {e}")
@@ -68,21 +66,45 @@ def get_weather_data(latitude, longitude):
         return None
 
 # Weather Code (WMOコード)を日本語と絵文字に変換する辞書
-# 欠けているコードがあれば、ここに追記することで「不明」を防げます
+# 不明を防ぐため、より多くのコードを追加しました
 WEATHER_CODES = {
-    0: ("快晴", "☀️"),
-    1: ("快晴", "☀️"),
-    2: ("一部曇り", "🌤️"), 
-    3: ("曇り", "☁️"), 
-    45: ("霧", "🌫️"),
-    51: ("弱い霧雨", "🌧️"), 
-    61: ("弱い雨", "☔️"), 
-    63: ("雨", "☔️"), 
-    65: ("激しい雨", "☔️"), 
-    71: ("弱い雪", "❄️"), 
-    80: ("弱いにわか雨", "🌦️"), 
-    81: ("にわか雨", "🌦️"), 
-    95: ("雷雨", "⛈️"), 
+    0: ("快晴", "☀️"), # Clear sky
+    1: ("快晴", "☀️"), # Mainly clear
+    2: ("一部曇り", "🌤️"),# Partly cloudy
+    3: ("曇り", "☁️"), # Overcast
+    
+    45: ("霧", "🌫️"), # Fog
+    48: ("霧氷を伴う霧", "🌫️"), # Depositing rime fog
+    
+    51: ("弱い霧雨", "🌧️"), # Drizzle light
+    53: ("並の霧雨", "🌧️"),  # Drizzle moderate
+    55: ("激しい霧雨", "🌧️"), # Drizzle dense
+    
+    56: ("弱い凍雨", "🌧️❄️"), # Freezing Drizzle light
+    57: ("激しい凍雨", "🌧️❄️"), # Freezing Drizzle dense
+    
+    61: ("弱い雨", "☔️"), # Rain slight
+    63: ("並の雨", "☔️"),  # Rain moderate
+    65: ("激しい雨", "☔️"),  # Rain heavy
+    
+    66: ("弱い凍雨", "☔️❄️"), # Freezing Rain light
+    67: ("激しい凍雨", "☔️❄️"), # Freezing Rain heavy
+    
+    71: ("弱い雪", "❄️"), # Snow fall slight
+    73: ("並の雪", "❄️"),  # Snow fall moderate
+    75: ("激しい雪", "❄️"), # Snow fall heavy
+    77: ("雪の粒", "❄️"), # Snow grains
+    
+    80: ("弱いにわか雨", "🌦️"), # Rain showers slight
+    81: ("並のにわか雨", "🌦️"), # Rain showers moderate
+    82: ("激しいにわか雨", "⛈️"), # Rain showers violent
+    
+    85: ("弱いにわか雪", "🌨️"), # Snow showers slight
+    86: ("激しいにわか雪", "🌨️"), # Snow showers heavy
+    
+    95: ("雷雨", "⛈️"), # Thunderstorm slight/moderate
+    96: ("雹を伴う雷雨", "⛈️"), # Thunderstorm with slight hail
+    99: ("雹を伴う激しい雷雨", "⛈️"), # Thunderstorm with heavy hail
 }
 
 def get_weather_display(code, max_temp, min_temp):
