@@ -6,7 +6,6 @@ from linebot import LineBotApi
 import requests # APIリクエスト用
 import os # 環境変数読み込み用
 
-# 【修正済み】 app = Flask(__name__) が正しい形です
 app = Flask(__name__)
 
 # --- 認証情報の読み込み (Canvas環境用) ---
@@ -16,7 +15,7 @@ try:
 except KeyError:
     print("Warning: LINE secret/token not found in environment variables.")
     CHANNEL_SECRET = "YOUR_CHANNEL_SECRET"
-    CHANNEL_ACCESS_TOKEN = "YOUR_ACCESS_TOKEN"
+    CHANNEL_ACCESS_TOKEN = "YOUR_CHANNEL_ACCESS_TOKEN"
 
 handler = WebhookHandler(CHANNEL_SECRET)
 line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN)
@@ -50,7 +49,7 @@ def get_coordinates(city_name):
 
 def get_weather_data(latitude, longitude):
     """緯度と経度から天気データを取得する (Open-Meteo Weather APIを使用)"""
-    WEATHER_URL = "https://api.open-mete-o.com/v1/forecast"
+    WEATHER_URL = "https://api.open-meteo.com/v1/forecast"
     params = {
         "latitude": latitude,
         "longitude": longitude,
@@ -71,10 +70,10 @@ def get_weather_data(latitude, longitude):
 WEATHER_CODES = {
     0: ("快晴", "☀️"), # Clear sky
     1: ("快晴", "☀️"), # Mainly clear
-    2: ("一部曇り", "🌤️"), # Partly cloudy
-    3: ("曇り", "☁️"),# Overcast
+    2: ("一部曇り", "🌤️"),# Partly cloudy
+    3: ("曇り", "☁️"), # Overcast
     
-    45: ("霧", "🌫️"), # Fog
+    45: ("霧", "🌫️"),  # Fog
     48: ("霧氷を伴う霧", "🌫️"), # Depositing rime fog
     
     51: ("弱い霧雨", "🌧️"), # Drizzle light
@@ -91,7 +90,7 @@ WEATHER_CODES = {
     66: ("弱い凍雨", "☔️❄️"), # Freezing Rain light
     67: ("激しい凍雨", "☔️❄️"), # Freezing Rain heavy
     
-    71: ("弱い雪", "❄️"),  # Snow fall slight
+    71: ("弱い雪", "❄️"), # Snow fall slight
     73: ("並の雪", "❄️"),  # Snow fall moderate
     75: ("激しい雪", "❄️"), # Snow fall heavy
     77: ("雪の粒", "❄️"), # Snow grains
@@ -118,15 +117,9 @@ def get_weather_display(code, max_temp, min_temp):
 # LINE Botのイベントハンドラ
 # ----------------------------------------------------
 
-# UptimeRobotなどのPINGに対応するためのルート('/')エンドポイント
-@app.route("/", methods=['GET'])
-def home():
-    """UptimeRobotからのGETアクセスを受け付け、Botをスリープさせないようにする"""
-    return 'OK', 200
-
 @app.route("/webhook", methods=['POST'])
 def webhook():
-    """LINEプラットフォームからのWebhookを受信するエンドポイント (POSTのみ許可)"""
+    """LINEプラットフォームからのWebhookを受信するエンドポイント"""
     signature = request.headers['X-Line-Signature']
     body = request.get_data(as_text=True)
     try:
