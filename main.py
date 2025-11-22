@@ -40,7 +40,10 @@ def get_coordinates(city_name):
         
         if data.get('results'):
             result = data['results'][0]
+            # 取得した地名情報 (例: 横浜市) を使用
             return result['latitude'], result['longitude'], result['name'] 
+        
+        # 検索結果が空の場合
         return None, None, None
     except requests.exceptions.RequestException as e:
         print(f"GeoCoding API Error: {e}")
@@ -52,7 +55,6 @@ def get_weather_data(latitude, longitude):
     params = {
         "latitude": latitude,
         "longitude": longitude,
-        # 今日と明日分の日別データのみを取得
         "daily": ["weather_code", "temperature_2m_max", "temperature_2m_min"],
         "timezone": "Asia/Tokyo",
         "forecast_days": 2 # 2日分（今日と明日）のみ
@@ -66,12 +68,13 @@ def get_weather_data(latitude, longitude):
         return None
 
 # Weather Code (WMOコード)を日本語と絵文字に変換する辞書
+# 欠けているコードがあれば、ここに追記することで「不明」を防げます
 WEATHER_CODES = {
-    0: ("快晴", "☀️"), 
-    1: ("快晴", "☀️"), 
+    0: ("快晴", "☀️"),
+    1: ("快晴", "☀️"),
     2: ("一部曇り", "🌤️"), 
     3: ("曇り", "☁️"), 
-    45: ("霧", "🌫️"), 
+    45: ("霧", "🌫️"),
     51: ("弱い霧雨", "🌧️"), 
     61: ("弱い雨", "☔️"), 
     63: ("雨", "☔️"), 
@@ -80,7 +83,7 @@ WEATHER_CODES = {
     80: ("弱いにわか雨", "🌦️"), 
     81: ("にわか雨", "🌦️"), 
     95: ("雷雨", "⛈️"), 
-    }
+}
 
 def get_weather_display(code, max_temp, min_temp):
     """WMOコードと気温から表示文字列を生成する"""
@@ -118,7 +121,10 @@ def handle_message(event):
     city_input = event.message.text.strip()
     
     # 1. 地名から緯度・経度を取得
-    latitude, longitude, city_name = get_coordinates(city_input)
+    latitude, longitude, api_city_name = get_coordinates(city_input)
+    
+    # APIが返す地名(api_city_name)が空だった場合、ユーザー入力の地名(city_input)をそのまま表示に使用
+    display_city_name = api_city_name if api_city_name else city_input
     
     if not latitude or not longitude:
         reply_text = f"ごめんね、'{city_input}' の場所情報が見つからなかったよ😥\n別の地名で試してみてね！"
@@ -130,7 +136,7 @@ def handle_message(event):
     
     # 2日分のデータ（今日[0]と明日[1]）があることを確認
     if not weather_data or 'daily' not in weather_data or len(weather_data['daily']['time']) < 2:
-        reply_text = f"ごめんね、{city_name} の天気予報データが不足しているよ😥"
+        reply_text = f"ごめんね、{display_city_name} の天気予報データが不足しているよ😥"
         line_bot_api.reply_message(event.reply_token, TextMessage(text=reply_text))
         return
 
@@ -155,9 +161,9 @@ def handle_message(event):
     tomorrow_display = get_weather_display(tomorrow_code, tomorrow_max, tomorrow_min)
     
     # 返信メッセージの構築
-    reply_text = f"{city_name} の空だよ✨\n\n" \
-                 f"今日： {city_name} {today_display}\n" \
-                 f"明日： {city_name} {tomorrow_display}\n" \
+    reply_text = f"{display_city_name} の空だよ✨\n\n" \
+                 f"今日： {display_city_name} {today_display}\n" \
+                 f"明日： {display_city_name} {tomorrow_display}\n" \
                  f"\n素敵な1日になりますように✨"
     
     line_bot_api.reply_message(
